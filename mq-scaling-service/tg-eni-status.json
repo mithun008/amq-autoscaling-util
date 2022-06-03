@@ -1,0 +1,56 @@
+{
+    "targetGroupArn": "arn:aws:elasticloadbalancing:us-west-2:681921237057:targetgroup/amq-rabbit-public-to-private-tg1/9c4f509749ac1638",
+    "HealthStatus": {
+        "TargetHealthDescriptions": [{
+                "HealthCheckPort": "5671",
+                "Target": {
+                    "AvailabilityZone": "us-west-2a",
+                    "Id": "172.31.16.137",
+                    "Port": 5671
+                },
+                "TargetHealth": {
+                    "State": "healthy"
+                }
+            },
+            {
+                "HealthCheckPort": "5671",
+                "Target": {
+                    "AvailabilityZone": "us-west-2c",
+                    "Id": "172.31.4.34",
+                    "Port": 5671
+                },
+                "TargetHealth": {
+                    "Description": "Target is in an Availability Zone that is not enabled for the load balancer",
+                    "Reason": "Target.NotInUse",
+                    "State": "unused"
+                }
+            },
+            {
+                "HealthCheckPort": "5671",
+                "Target": {
+                    "AvailabilityZone": "us-west-2b",
+                    "Id": "172.31.36.27",
+                    "Port": 5671
+                },
+                "TargetHealth": {
+                    "Description": "Target registration is in progress",
+                    "Reason": "Elb.RegistrationInProgress",
+                    "State": "initial"
+                }
+            },
+            {
+                "HealthCheckPort": "5671",
+                "Target": {
+                    "AvailabilityZone": "us-west-2a",
+                    "Id": "172.31.17.115",
+                    "Port": 5671
+                },
+                "TargetHealth": {
+                    "Description": "Target registration is in progress",
+                    "Reason": "Elb.RegistrationInProgress",
+                    "State": "initial"
+                }
+            }
+        ]
+    }
+}

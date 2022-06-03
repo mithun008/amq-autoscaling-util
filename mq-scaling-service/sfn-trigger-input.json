@@ -1,0 +1,60 @@
+{
+    "version": "0",
+    "id": "335f201c-ce5a-a4b7-3162-6c6dbd351e9c",
+    "detail-type": "AWS API Call via CloudTrail",
+    "source": "aws.amazonmq",
+    "account": "681921237057",
+    "time": "2022-05-16T23:05:08Z",
+    "region": "us-west-2",
+    "resources": [],
+    "detail": {
+        "eventVersion": "1.08",
+        "userIdentity": {
+            "type": "IAMUser",
+            "principalId": "AIDAIYEEBI7JRECXPWFL6",
+            "arn": "arn:aws:iam::681921237057:user/mithunm",
+            "accountId": "681921237057",
+            "accessKeyId": "ASIAZ5RNMKBA6JVVAV7J",
+            "userName": "mithunm",
+            "sessionContext": {
+                "sessionIssuer": {},
+                "webIdFederationData": {},
+                "attributes": {
+                    "creationDate": "2022-05-16T17:37:23Z",
+                    "mfaAuthenticated": "true"
+                }
+            }
+        },
+        "eventTime": "2022-05-16T23:05:08Z",
+        "eventSource": "amazonmq.amazonaws.com",
+        "eventName": "CreateBroker",
+        "awsRegion": "us-west-2",
+        "sourceIPAddress": "50.35.91.48",
+        "userAgent": "aws-internal/3 aws-sdk-java/1.12.216 Linux/5.4.181-109.354.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/25.332-b08 java/1.8.0_332 vendor/Oracle_Corporation cfg/retry-mode/standard",
+        "requestParameters": {
+            "engineVersion": "3.9.16",
+            "deploymentMode": "CLUSTER_MULTI_AZ",
+            "authenticationStrategy": "SIMPLE",
+            "engineType": "RABBITMQ",
+            "hostInstanceType": "mq.m5.large",
+            "users": [{ "username": "admin", "password": "***" }],
+            "tags": {},
+            "publiclyAccessible": false,
+            "storageType": "EBS",
+            "brokerName": "zalando-demo-broker-v2",
+            "logs": { "general": false },
+            "autoMinorVersionUpgrade": true
+        },
+        "responseElements": {
+            "brokerId": "b-034c6419-3f0c-404e-b015-2900c96cd3e3",
+            "brokerArn": "arn:aws:mq:us-west-2:681921237057:broker:zalando-demo-broker-v1:b-034c6419-3f0c-404e-b015-2900c96cd3e3"
+        },
+        "requestID": "0b52aca9-b642-4a29-98ff-de8e41ae855e",
+        "eventID": "f7de8a80-edf5-4456-b1de-5c314d10c670",
+        "readOnly": false,
+        "eventType": "AwsApiCall",
+        "managementEvent": true,
+        "recipientAccountId": "681921237057",
+        "eventCategory": "Management"
+    }
+}

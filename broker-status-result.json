@@ -1,0 +1,37 @@
+{
+    "AuthenticationStrategy": "simple",
+    "AutoMinorVersionUpgrade": true,
+    "BrokerArn": "arn:aws:mq:us-west-2:681921237057:broker:synch-status-rabbit:b-509dfc49-a4c0-48bd-88ee-ae0a27b5f8dc",
+    "BrokerId": "b-509dfc49-a4c0-48bd-88ee-ae0a27b5f8dc",
+    "BrokerInstances": [{
+        "ConsoleURL": "https://b-509dfc49-a4c0-48bd-88ee-ae0a27b5f8dc.mq.us-west-2.amazonaws.com",
+        "Endpoints": [
+            "amqps://b-509dfc49-a4c0-48bd-88ee-ae0a27b5f8dc.mq.us-west-2.amazonaws.com:5671"
+        ]
+    }],
+    "BrokerName": "synch-status-rabbit",
+    "BrokerState": "RUNNING",
+    "Created": "2021-11-16T20:03:20.349Z",
+    "DeploymentMode": "CLUSTER_MULTI_AZ",
+    "EncryptionOptions": {
+        "UseAwsOwnedKey": true
+    },
+    "EngineType": "RabbitMQ",
+    "EngineVersion": "3.9.13",
+    "HostInstanceType": "mq.m5.xlarge",
+    "Logs": {
+        "General": true,
+        "GeneralLogGroup": "/aws/amazonmq/broker/b-509dfc49-a4c0-48bd-88ee-ae0a27b5f8dc/general"
+    },
+    "MaintenanceWindowStartTime": {
+        "DayOfWeek": "WEDNESDAY",
+        "TimeOfDay": "22:00",
+        "TimeZone": "UTC"
+    },
+    "PubliclyAccessible": true,
+    "SecurityGroups": [],
+    "StorageType": "ebs",
+    "SubnetIds": [],
+    "Tags": {},
+    "Users": []
+}

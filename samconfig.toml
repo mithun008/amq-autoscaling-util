@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "rmq-auto-scaling"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-vuq5jvzma4ou"
+s3_prefix = "rmq-auto-scaling"
+region = "us-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "BrokerInstanceType=\"mq.m5.xlarge\" BrokerId=\"b-feb0218d-9aa9-4c12-a0a8-d487adfcc177\" BrokerName=\"zalando-demo-broker-v1\" NLBArn=\"arn:aws:elasticloadbalancing:us-west-2:681921237057:loadbalancer/net/zalando-cdk-demo-nlb/944a9a9a235360ff\""
+image_repositories = []

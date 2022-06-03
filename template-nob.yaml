@@ -1,0 +1,340 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Amazon MQ schedule based instance sizing
+
+  Sample SAM Template for schedule based instance sizing
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 70
+
+Parameters:
+  BrokerInstanceType:
+    Type: String
+    Default: mq.m5.xlarge
+    AllowedValues:
+      
+      - mq.m5.xlarge
+      - mq.m5.2xlarge
+      - mq.m5.4xlarge
+  BrokerId:
+    Type: String
+  BrokerName:
+    Type: String
+  NOBName1:
+    Type: String
+  NOBName2:
+    Type: String
+  NOBName3:
+    Type: String
+
+Resources:
+
+  MQScaleUpResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: mq-scaling-service/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SERVICE_NAME: MQScalingService
+          BROKER_ID: 
+            Ref: BrokerId
+          INSTANCE_TYPE:
+            Ref: BrokerInstanceType  
+      Policies:
+      - Statement:
+        - Sid: MQInstaneUpdatePolicy
+          Effect: "Allow"
+          Action:
+          - "mq:UpdateBroker"
+          - "mq:RebootBroker"
+          - "ec2:DescribeSubnets"
+          Resource: "*"
+
+  # NOB Scale up lambda function
+  NOBScaleUpResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.amazonaws.lab.NoBAutoScaler::handleRequest
+  
+      Runtime: java8
+      MemorySize: 512
+      Timeout: 300
+      Tracing: Active
+      Environment:
+        Variables:
+          SERVICE_NAME: MQScalingService
+          BROKER_ID: 
+            Ref: BrokerId
+          INSTANCE_TYPE:
+            Ref: BrokerInstanceType  
+      Policies:
+      - Statement:
+        - Sid: MQInstaneUpdatePolicy
+          Effect: "Allow"
+          Action:
+          - "mq:UpdateBroker"
+          - "mq:RebootBroker"
+          - "ec2:DescribeSubnets"
+          Resource: "*"
+
+
+
+
+  ScheduleRulePermissionToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "MQScaleUpResource"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "ScheduledRule"
+          - "Arn"
+
+  CWAlarmRulePermissionToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "MQScaleUpResource"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "CWTriggeredRule"
+          - "Arn"     
+
+  ActiveStandbyAlarmRulePermissionToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "NOBScaleUpResource"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "CWTriggeredRule"
+          - "Arn"  
+
+
+  NOBAlarmRulePermissionToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Ref: "NOBScaleUpResource"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "NOBTriggeredRule"
+          - "Arn"   
+
+  BrokerCompositeCPUAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: BrokerCPUTooHigh
+      AlarmRule: (ALARM(Broker1CPUTooHigh) OR ALARM(Broker2CPUTooHigh))
+
+      AlarmDescription: Indicates that all the brokers in the NOB have high CPU usage
+    DependsOn:
+    - BrokerCPUAlarm1
+    - BrokerCPUAlarm2
+    
+
+  BrokerCPUAlarm1:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: Broker1CPUTooHigh
+      AlarmDescription: CPU alarm for my broker instance
+      
+      MetricName: CpuUtilization
+      Namespace: AWS/AmazonMQ
+      Statistic: Maximum
+      Period: '60'
+      EvaluationPeriods: '3'
+      Threshold: '10'
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+      - Name: Broker
+        Value: 
+          !Join
+            - ''
+            - - Ref: BrokerName
+              - '-1'
+
+  BrokerCPUAlarm2:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: Broker2CPUTooHigh
+      AlarmDescription: CPU alarm for my broker instance
+      
+      MetricName: CpuUtilization
+      Namespace: AWS/AmazonMQ
+      Statistic: Maximum
+      Period: '60'
+      EvaluationPeriods: '3'
+      Threshold: '10'
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+      - Name: Broker
+        Value: 
+          !Join
+            - ''
+            - - Ref: BrokerName
+              - '-2'        
+
+  NOBCompositeCPUAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: NOBHighCPUAlarm
+      AlarmRule: (ALARM(NOB1CPUTooHigh) AND ALARM(NOB2CPUTooHigh) AND ALARM(NOB3CPUTooHigh))
+
+      AlarmDescription: Indicates that all the brokers in the NOB have high CPU usage
+    DependsOn:
+    - NOB1CPUAlarm
+    - NOB2CPUAlarm
+    - NOB3CPUAlarm
+
+  NOB1CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NOB1CPUTooHigh
+      AlarmDescription: CPU alarm for my broker instance
+      
+      MetricName: CpuUtilization
+      Namespace: AWS/AmazonMQ
+      Statistic: Maximum
+      Period: '60'
+      EvaluationPeriods: '3'
+      Threshold: '10'
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+      - Name: Broker
+        Value: 
+          Ref: NOBName1
+  NOB2CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NOB2CPUTooHigh
+      AlarmDescription: CPU alarm for my broker instance
+      
+      MetricName: CpuUtilization
+      Namespace: AWS/AmazonMQ
+      Statistic: Maximum
+      Period: '60'
+      EvaluationPeriods: '3'
+      Threshold: '10'
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+      - Name: Broker
+        Value: 
+          Ref: NOBName2
+
+  NOB3CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NOB3CPUTooHigh
+      AlarmDescription: CPU alarm for my broker instance
+      
+      MetricName: CpuUtilization
+      Namespace: AWS/AmazonMQ
+      Statistic: Maximum
+      Period: '60'
+      EvaluationPeriods: '3'
+      Threshold: '10'
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+      - Name: Broker
+        Value: 
+          Ref: NOBName3
+  # Active standby broker scale up rule based on schedule
+  ScheduledRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Name: "MQScheduledScalingRule"
+      Description: "ScheduledRule"
+      ScheduleExpression: "cron(0 22 * * ? *)"
+      State: "DISABLED"
+      Targets: 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "MQScaleUpResource"
+              - "Arn"
+          Id: "TargetId1"
+
+  # Active standby broker scale up rule based on CPU
+  CWTriggeredRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      Name: "CWRule"
+      Description: "CW rule for high CPU utilization"
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type: 
+          - "CloudWatch Alarm State Change"
+        detail: 
+          alarmName: 
+            - "BrokerCPUTooHigh"          
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "MQScaleUpResource"
+              - "Arn"
+          Id: "TargetId2" 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "MQCWEventsLogsGroup"
+              - "Arn"
+          Id: "TargetId3" 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "NOBScaleUpResource"
+              - "Arn"
+          Id: "TargetId4" 
+
+  # NoB Trigger rule
+  NOBTriggeredRule:
+    Type: AWS::Events::Rule
+    Properties: 
+      Name: "NOBRule"
+      Description: "CW rule for high CPU utilization for NoB"
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type: 
+          - "CloudWatch Alarm State Change"
+        detail: 
+          alarmName: 
+            - "NOBHighCPUAlarm"          
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "NOBScaleUpResource"
+              - "Arn"
+          Id: "TargetId5" 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "MQCWEventsLogsGroup"
+              - "Arn"
+          Id: "TargetId6" 
+
+
+  MQCWEventsLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/events/mq-cw-events
+      RetentionInDays: 30

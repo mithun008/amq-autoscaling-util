@@ -1,0 +1,3 @@
+
+aws ec2 describe-vpc-endpoints  --filters "Name=tag:Broker,Values=b-4550b675-b642-46ae-a95d-4df3dc1f5d0b"
+aws ec2 describe-network-interfaces --network-interface-ids eni-001026031dbfd573a

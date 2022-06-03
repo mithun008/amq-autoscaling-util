@@ -1,0 +1,186 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Amazon MQ auto scaling based on CPU utilization
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 70
+
+Parameters:
+  BrokerInstanceType:
+    Type: String
+    Default: mq.m5.xlarge
+    AllowedValues:
+      - mq.m5.xlarge
+      - mq.m5.2xlarge
+      - mq.m5.4xlarge
+  BrokerId:
+    Type: String
+  BrokerName:
+    Type: String
+  NLBArn:
+    Type: String
+
+Resources:
+  MQScaleUpResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: mq-scaling-service/
+      Handler: app.lambda_scaling_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SERVICE_NAME: MQScalingService
+          BROKER_ID:
+            Ref: BrokerId
+          INSTANCE_TYPE:
+            Ref: BrokerInstanceType
+      Policies:
+        - Statement:
+            - Sid: MQInstaneUpdatePolicy
+              Effect: "Allow"
+              Action:
+                - "mq:UpdateBroker"
+                - "mq:RebootBroker"
+                - "ec2:DescribeSubnets"
+              Resource: "*"
+
+  # Lambda function to handle new broker creation
+  MQBrokerStatusResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: mq-scaling-service/
+      Handler: app.lambda_brokerstatus_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SERVICE_NAME: MQBrokerStatusService
+          BROKER_ID:
+            Ref: BrokerId
+          INSTANCE_TYPE:
+            Ref: BrokerInstanceType
+          NLB_ARN:
+            Ref: NLBArn
+      Policies:
+        - Statement:
+            - Sid: NLBTGUpdatePolicy
+              Effect: "Allow"
+              Action:
+                - "ec2:DescribeVpcEndpoints"
+                - "ec2:DescribeNetworkInterfaces"
+                - "elasticloadbalancing:RegisterTargets"
+                - "elasticloadbalancing:DescribeListeners"
+                - "elasticloadbalancing:DescribeLoadBalancers"
+                - "elasticloadbalancing:CreateTargetGroup"
+                - "elasticloadbalancing:ModifyListener"
+                - "elasticloadbalancing:ModifyTargetGroupAttributes"
+                - "elasticloadbalancing:DescribeTargetHealth"
+                - "elasticloadbalancing:DeregisterTargets"
+                
+                - "ec2:DescribeSubnets"
+              Resource: "*"
+
+  MQENIStatusCheckResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: mq-scaling-service/
+      Handler: app.lambda_targetenistatus_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SERVICE_NAME: MQENIStatusService
+          BROKER_ID:
+            Ref: BrokerId
+          INSTANCE_TYPE:
+            Ref: BrokerInstanceType
+          NLB_ARN:
+            Ref: NLBArn
+
+
+  CWAlarmRulePermissionToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: "MQScaleUpResource"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "CWTriggeredRule"
+          - "Arn"
+
+  CWTriggeredRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: "CWRule"
+      Description: "CW rule for high CPU utilization"
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type:
+          - "CloudWatch Alarm State Change"
+        detail:
+          alarmName:
+            - "BrokerCPUTooHigh"
+      State: "ENABLED"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - "MQScaleUpResource"
+              - "Arn"
+          Id: "TargetId1"
+        - Arn:
+            Fn::GetAtt:
+              - "MQCWEventsLogsGroup"
+              - "Arn"
+          Id: "TargetId2"
+
+  CWTriggeredRuleBrokerStart:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: "AMQBrokerStartRule"
+      Description: "CW rule for detecting broker start"
+      EventPattern:
+        source:
+          - aws.amazonmq
+        detail-type:
+          - "AWS API Call via CloudTrail"
+        detail:
+          eventName:
+            - "CreateBroker"
+      State: "ENABLED"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - "MQCWEventsLogsGroup"
+              - "Arn"
+          Id: "TargetId4"
+
+
+  BrokerCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: BrokerCPUTooHigh
+      AlarmDescription: CPU alarm for my broker instance
+
+      MetricName: SystemCpuUtilization
+      Namespace: AWS/AmazonMQ
+      Statistic: Maximum
+      Period: "60"
+      EvaluationPeriods: "3"
+      Threshold: "45"
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Broker
+          Value:
+            Ref: BrokerName
+
+  MQCWEventsLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/events/mq-cw-events
+      RetentionInDays: 30
+
+

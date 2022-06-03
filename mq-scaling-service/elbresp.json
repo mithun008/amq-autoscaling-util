@@ -1,0 +1,53 @@
+{
+    "TargetHealthDescriptions": [{
+            "Target": {
+                "Id": "172.31.24.236",
+                "Port": 5671,
+                "AvailabilityZone": "us-west-2a"
+            },
+            "HealthCheckPort": "5671",
+            "TargetHealth": {
+                "State": "unhealthy",
+                "Reason": "Target.FailedHealthChecks",
+                "Description": "Health checks failed"
+            }
+        },
+        {
+            "Target": {
+                "Id": "172.31.11.254",
+                "Port": 5671,
+                "AvailabilityZone": "us-west-2c"
+            },
+            "HealthCheckPort": "5671",
+            "TargetHealth": {
+                "State": "unhealthy",
+                "Reason": "Target.FailedHealthChecks",
+                "Description": "Health checks failed"
+            }
+        },
+        {
+            "Target": {
+                "Id": "172.31.36.90",
+                "Port": 5671,
+                "AvailabilityZone": "us-west-2b"
+            },
+            "HealthCheckPort": "5671",
+            "TargetHealth": {
+                "State": "unhealthy",
+                "Reason": "Target.FailedHealthChecks",
+                "Description": "Health checks failed"
+            }
+        }
+    ],
+    "ResponseMetadata": {
+        "RequestId": "80016da6-4068-4ba9-a3f8-da2dfbadf333",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "x-amzn-requestid": "80016da6-4068-4ba9-a3f8-da2dfbadf333",
+            "content-type": "text/xml",
+            "content-length": "1639",
+            "date": "Wed, 18 May 2022 19:37:40 GMT"
+        },
+        "RetryAttempts": 0
+    }
+}

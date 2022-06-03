@@ -1,0 +1,65 @@
+{
+    "version": "0",
+    "id": "1ee5c541-775d-1634-d27d-d96726d5e332",
+    "detail-type": "AWS API Call via CloudTrail",
+    "source": "aws.amazonmq",
+    "account": "681921237057",
+    "time": "2022-04-20T22:28:25Z",
+    "region": "us-west-2",
+    "resources": [],
+    "detail": {
+        "eventVersion": "1.08",
+        "userIdentity": {
+            "type": "IAMUser",
+            "principalId": "AIDAIYEEBI7JRECXPWFL6",
+            "arn": "arn:aws:iam::681921237057:user/mithunm",
+            "accountId": "681921237057",
+            "accessKeyId": "ASIAZ5RNMKBAZRZLHRUO",
+            "userName": "mithunm",
+            "sessionContext": {
+                "sessionIssuer": {},
+                "webIdFederationData": {},
+                "attributes": {
+                    "creationDate": "2022-04-20T22:20:09Z",
+                    "mfaAuthenticated": "true"
+                }
+            }
+        },
+        "eventTime": "2022-04-20T22:28:25Z",
+        "eventSource": "amazonmq.amazonaws.com",
+        "eventName": "CreateBroker",
+        "awsRegion": "us-west-2",
+        "sourceIPAddress": "50.35.91.48",
+        "userAgent": "aws-internal/3 aws-sdk-java/1.12.198 Linux/5.4.176-103.347.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/25.322-b06 java/1.8.0_322 vendor/Oracle_Corporation cfg/retry-mode/standard",
+        "requestParameters": {
+            "engineVersion": "3.9.13",
+            "deploymentMode": "SINGLE_INSTANCE",
+            "authenticationStrategy": "SIMPLE",
+            "engineType": "RABBITMQ",
+            "hostInstanceType": "mq.m5.large",
+            "users": [{
+                "username": "admin",
+                "password": "***"
+            }],
+            "tags": {},
+            "publiclyAccessible": true,
+            "storageType": "EBS",
+            "brokerName": "TestRuleBroker",
+            "logs": {
+                "general": true
+            },
+            "autoMinorVersionUpgrade": true
+        },
+        "responseElements": {
+            "brokerId": "b-bbc1fcca-9d94-488a-a827-e8c8e9fae659",
+            "brokerArn": "arn:aws:mq:us-west-2:681921237057:broker:TestRuleBroker:b-e3020db5-2afa-4ab3-b68a-7dd36a4125cb"
+        },
+        "requestID": "79c0217d-3c2d-4c4f-add5-ae6fe0b5a1ab",
+        "eventID": "1d5df491-2d6b-4c08-8458-796905541970",
+        "readOnly": false,
+        "eventType": "AwsApiCall",
+        "managementEvent": true,
+        "recipientAccountId": "681921237057",
+        "eventCategory": "Management"
+    }
+}

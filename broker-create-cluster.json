@@ -1,0 +1,65 @@
+{
+    "version": "0",
+    "id": "8133a0b6-a6da-11de-7890-e94f8b45fe86",
+    "detail-type": "AWS API Call via CloudTrail",
+    "source": "aws.amazonmq",
+    "account": "681921237057",
+    "time": "2022-04-30T00:02:23Z",
+    "region": "us-west-2",
+    "resources": [],
+    "detail": {
+        "eventVersion": "1.08",
+        "userIdentity": {
+            "type": "IAMUser",
+            "principalId": "AIDAIYEEBI7JRECXPWFL6",
+            "arn": "arn:aws:iam::681921237057:user/mithunm",
+            "accountId": "681921237057",
+            "accessKeyId": "ASIAZ5RNMKBAYUIAS5FK",
+            "userName": "mithunm",
+            "sessionContext": {
+                "sessionIssuer": {},
+                "webIdFederationData": {},
+                "attributes": {
+                    "creationDate": "2022-04-29T14:40:57Z",
+                    "mfaAuthenticated": "true"
+                }
+            }
+        },
+        "eventTime": "2022-04-30T00:02:23Z",
+        "eventSource": "amazonmq.amazonaws.com",
+        "eventName": "CreateBroker",
+        "awsRegion": "us-west-2",
+        "sourceIPAddress": "50.35.91.48",
+        "userAgent": "aws-internal/3 aws-sdk-java/1.12.204 Linux/5.4.176-103.347.amzn2int.x86_64 OpenJDK_64-Bit_Server_VM/25.332-b08 java/1.8.0_332 vendor/Oracle_Corporation cfg/retry-mode/standard",
+        "requestParameters": {
+            "engineVersion": "3.9.13",
+            "deploymentMode": "CLUSTER_MULTI_AZ",
+            "authenticationStrategy": "SIMPLE",
+            "engineType": "RABBITMQ",
+            "hostInstanceType": "mq.m5.large",
+            "users": [{
+                "username": "admin",
+                "password": "***"
+            }],
+            "tags": {},
+            "publiclyAccessible": false,
+            "storageType": "EBS",
+            "brokerName": "rabbit-auto-scale-cluster-test",
+            "logs": {
+                "general": false
+            },
+            "autoMinorVersionUpgrade": true
+        },
+        "responseElements": {
+            "brokerId": "b-5c20383f-09af-4141-a6e5-5dea346929c7",
+            "brokerArn": "arn:aws:mq:us-west-2:681921237057:broker:rabbit-auto-scale-cluster-test:b-5c20383f-09af-4141-a6e5-5dea346929c7"
+        },
+        "requestID": "a2ca7d08-6810-4069-9aa4-6bcd6cf36955",
+        "eventID": "74aacf8f-9747-4b8e-86ee-c931159ab40b",
+        "readOnly": false,
+        "eventType": "AwsApiCall",
+        "managementEvent": true,
+        "recipientAccountId": "681921237057",
+        "eventCategory": "Management"
+    }
+}
