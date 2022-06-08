@@ -1,30 +1,28 @@
-# AmazonMQ - Broker scaling utility
-Serverless utility to scale up broker based on CPU utilization. The utility creates a CW alarm based on broker CPU utilization. The alarm event is captured in a EventBridge rule which triggers a lambda function. The lambda function calls a MQ broker API to update the broker instance size.
+# AmazonMQ - Broker reconfiguration utility
+Serverless utility to reconfigure the NLB endpoint that is used as a facade to the ENI's connecting to Amazon MQ for RabbitMQ broker. It also includes a module to auto scale Amazon MQ broker based on aggregated CPU utilization. 
 
-![MQ Scaling](images/mq-scaling.png)
+# Prerequisites
+Install SAM cli by following the instructions provided in [documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
 
 # Instructions
+The entire utility is packaged as a Serverless Application Model (SAM) template.More details on SAM can be found [here](https://aws.amazon.com/serverless/sam/).
 
-1. Get the broker id based om the broker name using the command below. Replace the broker name with name of your broker instance. We will use the broker id in the later steps.
 
-```bash
-aws mq list-brokers --query 'BrokerSummaries[?BrokerName==`<<REPLACE_BROKER_NAME>>`].BrokerId'
-```
+1.  Clone the amq-autoscaling-util project.
+    ```bash
+    git clone https://github.com/mithun008/amq-autoscaling-util.git
+    ```
+1. Go the amq-autoscaling-util folder.
 
-2. We are using a SAM template to deploy the solution. Run the following command to build the code.
+1. Capture the ARN for the NLB that points to the broker ENI's.
 
-```bash
-sam build
-```
-3. We can deploy the solution by running the following command. The desired instance type will be specified as the parameter.
+1. Build the SAM template by running the below command.
+    ```bash
+    sam build
+    ```
+1. Deploy SAM template
+    ```bash
+    sam deploy --guided
+    ```
+    The command will prompt for the ARN of the NLB that points to the broker ENI's.
 
-```bash
-export AWS_REGION=$(aws --profile default configure get region)
-sam deploy \
-    --stack-name mq-scaling-service \
-    --capabilities CAPABILITY_IAM \
-    --region $AWS_REGION \
-    --BrokerInstanceType <<REPLACE_WITH_INSTANCE_TYPE>> \
-    --BrokerId <<REPLACE_WITH_BROKER_ID>> \
-    --BrokerName <<REPLACE_WITH_BROKER_NAME>>
-```
