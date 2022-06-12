@@ -1,115 +1,114 @@
 {
-    "Comment": "A description of my state machine",
-    "StartAt": "DescribeBroker",
-    "States": {
-      "DescribeBroker": {
-        "Type": "Task",
-        "Next": "Choice",
-        "Parameters": {
-          "BrokerId.$": "$.detail.responseElements.brokerId"
-        },
-        "Resource": "arn:aws:states:::aws-sdk:mq:describeBroker",
-        "Comment": "Check if the broker is running",
-        "ResultSelector": {
-          "detail": {
-            "responseElements": {
-              "brokerId.$": "$.BrokerId",
-              "BrokerState.$": "$.BrokerState"
-            }
+  "Comment": "Workflow to reconfigure the NLB target group to new broker instances",
+  "StartAt": "DescribeBroker",
+  "States": {
+    "DescribeBroker": {
+      "Type": "Task",
+      "Next": "Choice",
+      "Parameters": {
+        "BrokerId.$": "$.detail.responseElements.brokerId"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:mq:describeBroker",
+      "Comment": "Check if the broker is running",
+      "ResultSelector": {
+        "detail": {
+          "responseElements": {
+            "brokerId.$": "$.BrokerId",
+            "BrokerState.$": "$.BrokerState"
           }
         }
-      },
-      "Choice": {
-        "Type": "Choice",
-        "Choices": [
-          {
-            "Not": {
-              "Variable": "$.detail.responseElements.BrokerState",
-              "StringEquals": "RUNNING"
-            },
-            "Next": "Wait for running broker state"
-          }
-        ],
-        "Default": "Register ENIs to target group"
-      },
-      "Register ENIs to target group": {
-        "Type": "Task",
-        "Resource": "arn:aws:states:::lambda:invoke",
-        "OutputPath": "$.Payload",
-        "Parameters": {
-          "Payload.$": "$",
-          //"FunctionName": "arn:aws:lambda:us-west-2:681921237057:function:rmq-auto-scaling-MQBrokerStatusResource-uGFQMwG1sODu"
-          "Resource": "${MQBrokerStatusResourceArn}"
-        },
-        "Retry": [
-          {
-            "ErrorEquals": [
-              "Lambda.ServiceException",
-              "Lambda.AWSLambdaException",
-              "Lambda.SdkClientException"
-            ],
-            "IntervalSeconds": 2,
-            "MaxAttempts": 6,
-            "BackoffRate": 2
-          }
-        ],
-        "Next": "DescribeTargetHealth"
-      },
-      "DescribeTargetHealth": {
-        "Type": "Task",
-        "Parameters": {
-          "TargetGroupArn.$": "$.targetGroupArn"
-        },
-        "Resource": "arn:aws:states:::aws-sdk:elasticloadbalancingv2:describeTargetHealth",
-        "Next": "Check For Registering ENIs",
-        "ResultPath": "$.HealthStatus"
-      },
-      "Check For Registering ENIs": {
-        "Type": "Task",
-        "Resource": "arn:aws:states:::lambda:invoke",
-        "OutputPath": "$.Payload",
-        "Parameters": {
-          "Payload.$": "$",
-          "FunctionName": "arn:aws:lambda:us-west-2:681921237057:function:rmq-auto-scaling-MQENIStatusCheckResource-hzYrlBiH2Ky0:$LATEST"
-        },
-        "Retry": [
-          {
-            "ErrorEquals": [
-              "Lambda.ServiceException",
-              "Lambda.AWSLambdaException",
-              "Lambda.SdkClientException"
-            ],
-            "IntervalSeconds": 2,
-            "MaxAttempts": 6,
-            "BackoffRate": 2
-          }
-        ],
-        "Next": "Check if all ENI's healthy"
-      },
-      "Check if all ENI's healthy": {
-        "Type": "Choice",
-        "Choices": [
-          {
-            "Variable": "$.all_eni_healthy",
-            "StringEquals": "true",
-            "Next": "Target ENI Healthy"
-          }
-        ],
-        "Default": "Wait"
-      },
-      "Wait": {
-        "Type": "Wait",
-        "Seconds": 30,
-        "Next": "DescribeTargetHealth"
-      },
-      "Target ENI Healthy": {
-        "Type": "Pass",
-        "End": true
-      },
-      "Wait for running broker state": {
-        "Type": "Wait",
-        "Seconds": 300,
-        "Next": "DescribeBroker"
       }
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Not": {
+            "Variable": "$.detail.responseElements.BrokerState",
+            "StringEquals": "RUNNING"
+          },
+          "Next": "Wait for running broker state"
+        }
+      ],
+      "Default": "Register ENIs to target group"
+    },
+    "Register ENIs to target group": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${BrokerStatusResourceArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "DescribeTargetHealth"
+    },
+    "DescribeTargetHealth": {
+      "Type": "Task",
+      "Parameters": {
+        "TargetGroupArn.$": "$.targetGroupArn"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:elasticloadbalancingv2:describeTargetHealth",
+      "Next": "Check For Registering ENIs",
+      "ResultPath": "$.HealthStatus"
+    },
+    "Check For Registering ENIs": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${ENIStatusCheckResourceArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Check if all ENI's healthy"
+    },
+    "Check if all ENI's healthy": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.all_eni_healthy",
+          "StringEquals": "true",
+          "Next": "Target ENI Healthy"
+        }
+      ],
+      "Default": "Wait"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 30,
+      "Next": "DescribeTargetHealth"
+    },
+    "Target ENI Healthy": {
+      "Type": "Pass",
+      "End": true
+    },
+    "Wait for running broker state": {
+      "Type": "Wait",
+      "Seconds": 300,
+      "Next": "DescribeBroker"
     }
   }
+}

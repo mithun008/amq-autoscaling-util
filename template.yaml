@@ -137,6 +137,8 @@ Resources:
               - "Arn"
           Id: "TargetId2"
 
+  
+
   CWTriggeredRuleBrokerStart:
     Type: AWS::Events::Rule
     Properties:
@@ -157,7 +159,7 @@ Resources:
               - "MQCWEventsLogsGroup"
               - "Arn"
           Id: "TargetId4"
-
+    
 
   BrokerCPUAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -184,3 +186,136 @@ Resources:
       RetentionInDays: 30
 
 
+  StateMachineNLBReconfigForMQ:
+      Type: AWS::Serverless::StateMachine # More info about State Machine Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-statemachine.html
+      Properties:
+        DefinitionUri: statemachine/tg-broker-eni.asl.json
+        Tracing:
+          Enabled: true
+        DefinitionSubstitutions:
+          BrokerStatusResourceArn: !GetAtt MQBrokerStatusResource.Arn
+          ENIStatusCheckResourceArn: !GetAtt MQENIStatusCheckResource.Arn
+
+        Role:
+          Fn::GetAtt: [ StatesExecutionRole, Arn ]
+
+        Events:
+          StateChange:
+            Type: EventBridgeRule
+            Properties:
+              
+              EventBusName: default
+              InputPath: $.detail
+              Pattern:
+                source:
+                      - aws.amazonmq
+                detail-type:
+                  - "AWS API Call via CloudTrail"
+                detail:
+                  eventName:
+                    - "CreateBroker"
+        Logging:
+          Destinations:
+            - CloudWatchLogsLogGroup:
+                LogGroupArn: !GetAtt StateMachineLogGroup.Arn
+          IncludeExecutionData: false
+          Level: 'ALL'
+
+##########################################################################
+#  STEP FUNCTION LOG GROUP                                               #
+##########################################################################
+  StateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join [ "/", [ "stepfunctions", StateMachineNLBReconfigForMQ]]
+       
+##########################################################################
+#   Roles                                                               #
+##########################################################################
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: LambdaExecute
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: !GetAtt MQBrokerStatusResource.Arn
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: !GetAtt MQENIStatusCheckResource.Arn
+        - PolicyName: BrokerStatusCheck
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "mq:ListConfigurationRevisions"
+                  - "mq:ListConfigurationRevisions"
+                  - "mq:DescribeConfiguration"
+                  - "mq:DescribeBroker"
+                  - "mq:ListBrokers"
+                  - "mq:ListTags"
+                  - "mq:DescribeBrokerEngineTypes"
+                  - "mq:DescribeConfigurationRevision"
+                  - "mq:DescribeBrokerInstanceOptions"
+                  - "mq:ListConfigurations"
+                Resource: '*'
+
+        - PolicyName: ELBTargetUpdate
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                - "elasticloadbalancing:DescribeLoadBalancerAttributes"
+                - "elasticloadbalancing:DescribeSSLPolicies"
+                - "elasticloadbalancing:DescribeLoadBalancers"
+                - "elasticloadbalancing:DescribeTargetGroupAttributes"
+                - "elasticloadbalancing:DescribeListeners"
+                - "elasticloadbalancing:DescribeTags"
+                - "elasticloadbalancing:DescribeAccountLimits"
+                - "elasticloadbalancing:DescribeTargetHealth"
+                - "elasticloadbalancing:DescribeTargetGroups"
+                - "elasticloadbalancing:DescribeListenerCertificates"
+                - "elasticloadbalancing:DescribeRules"
+                Resource: '*'             
+        - PolicyName: LogAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                - "logs:CreateLogDelivery"
+                - "logs:GetLogDelivery"
+                - "logs:UpdateLogDelivery"
+                - "logs:DeleteLogDelivery"
+                - "logs:ListLogDeliveries"
+                - "logs:PutResourcePolicy"
+                - "logs:DescribeResourcePolicies"
+                - "logs:DescribeLogGroups"
+                Resource: '*'                             
+        - PolicyName: XRayAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                - "xray:PutTraceSegments"
+                - "xray:PutTelemetryRecords"
+                - "xray:GetSamplingRules"
+                - "xray:GetSamplingTargets"
+                Resource: '*'  
