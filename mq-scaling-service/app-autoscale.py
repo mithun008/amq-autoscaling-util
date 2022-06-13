@@ -7,13 +7,33 @@ import time
 from jsonpath_ng.ext import parse
 
 SERVICE_NAME = os.environ['SERVICE_NAME']
-
+BROKER_ID = os.environ['BROKER_ID']
+INSTANCE_TYPE = os.environ['INSTANCE_TYPE']
 
 NLB_ARN = os.environ['NLB_ARN']
 
 client = boto3.client('mq')
 
 
+def lambda_scaling_handler(event, context):
+    print('{} received event: {}'.format(SERVICE_NAME, json.dumps(event)))
+    print('Broker id  : {}'.format(BROKER_ID))
+    print('Instance type : {}'.format(INSTANCE_TYPE))
+
+    # check broker instance type. If its a type which has further room to grow then upgrade or create new.
+    # For scale down, check if its bigger than m5.large then scale down.
+
+    # call the MQ API to upscale
+    response = client.update_broker(
+        BrokerId=BROKER_ID, HostInstanceType=INSTANCE_TYPE)
+    print('{} received update broker response: {}'.format(
+        SERVICE_NAME, json.dumps(response)))
+    # reboot the broker
+    response = client.reboot_broker(BrokerId=BROKER_ID)
+    print('{} received reboot broker response: {}'.format(
+        SERVICE_NAME, json.dumps(response)))
+
+    return
 
 
 def lambda_brokerstatus_handler(event, context):
@@ -36,8 +56,6 @@ def lambda_brokerstatus_handler(event, context):
             },
         ]
     )
-    
-    print('Vpc endpoint response {}'.format(vpc_endpoint_response))
 
     if not vpc_endpoint_response['VpcEndpoints'][0]['NetworkInterfaceIds'] is None:
         print('The ENI id is {}'.format(
